@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Zap } from "lucide-react";
+import { Menu, X, Zap, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, logout, isAuthenticated } = useAuth();
 
   const navigation = [
     { name: "Features", href: "#features" },
@@ -41,12 +43,26 @@ const Header = () => {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost" size="sm">
-              Log In
-            </Button>
-            <Button variant="gradient" size="sm">
-              Start Free Trial
-            </Button>
+            {isAuthenticated ? (
+              <>
+                <span className="text-muted-foreground text-sm">
+                  Welcome, {user?.firstName}
+                </span>
+                <Button variant="ghost" size="sm" onClick={logout}>
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Log Out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm">
+                  Log In
+                </Button>
+                <Button variant="gradient" size="sm">
+                  Start Free Trial
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button */}
