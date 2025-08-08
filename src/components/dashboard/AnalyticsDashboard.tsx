@@ -23,10 +23,10 @@ const AnalyticsDashboard = () => {
   ];
 
   const teamDistribution = [
-    { name: 'Development', value: 45, color: '#3B82F6' },
-    { name: 'Design', value: 25, color: '#8B5CF6' },
-    { name: 'Marketing', value: 20, color: '#10B981' },
-    { name: 'Sales', value: 10, color: '#F59E0B' },
+    { name: 'Development', value: 45, color: 'hsl(var(--primary))' },
+    { name: 'Design', value: 25, color: 'hsl(var(--accent))' },
+    { name: 'Marketing', value: 20, color: 'hsl(var(--success))' },
+    { name: 'Sales', value: 10, color: 'hsl(var(--destructive))' },
   ];
 
   const revenueData = [

@@ -139,7 +139,7 @@ const ChatInterface = () => {
                 key={channel.id}
                 onClick={() => setActiveChannel(channel.id)}
                 className={`w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-sm transition-all ${
-                  channel.isActive 
+                  channel.id === activeChannel 
                     ? 'bg-primary/10 text-primary' 
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                 }`}

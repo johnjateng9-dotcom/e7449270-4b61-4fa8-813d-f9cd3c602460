@@ -35,7 +35,7 @@ const ProjectBoard = () => {
     {
       id: "todo",
       title: "To Do",
-      color: "border-blue-500/30 bg-blue-500/10",
+      color: "border-primary/30 bg-primary/10",
       tasks: [
         {
           id: "1",
@@ -64,7 +64,7 @@ const ProjectBoard = () => {
     {
       id: "progress",
       title: "In Progress",
-      color: "border-yellow-500/30 bg-yellow-500/10",
+      color: "border-accent/30 bg-accent/10",
       tasks: [
         {
           id: "3",
@@ -82,7 +82,7 @@ const ProjectBoard = () => {
     {
       id: "review",
       title: "In Review",
-      color: "border-purple-500/30 bg-purple-500/10",
+      color: "border-muted/30 bg-muted/10",
       tasks: [
         {
           id: "4",
@@ -100,7 +100,7 @@ const ProjectBoard = () => {
     {
       id: "done",
       title: "Done",
-      color: "border-green-500/30 bg-green-500/10",
+      color: "border-success/30 bg-success/10",
       tasks: [
         {
           id: "5",
@@ -119,9 +119,9 @@ const ProjectBoard = () => {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "high": return "text-red-500";
-      case "medium": return "text-yellow-500";
-      case "low": return "text-green-500";
+      case "high": return "text-destructive";
+      case "medium": return "text-accent";
+      case "low": return "text-success";
       default: return "text-muted-foreground";
     }
   };

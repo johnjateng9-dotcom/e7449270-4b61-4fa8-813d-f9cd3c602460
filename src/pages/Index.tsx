@@ -14,11 +14,36 @@ import {
   FileText, 
   Users, 
   Zap,
-  ArrowLeft
+  ArrowLeft,
+  type LucideIcon
 } from "lucide-react";
 
 const Index = () => {
   const [currentView, setCurrentView] = useState<'landing' | 'dashboard' | 'projects' | 'analytics' | 'chat' | 'documents'>('landing');
+
+  type Feature = { icon: LucideIcon; title: string; description: string; action: () => void };
+  const features: Feature[] = [
+    { icon: FolderKanban, title: "Project Management", description: "Kanban boards, Gantt charts, task automation", action: () => setCurrentView('projects') },
+    { icon: MessageCircle, title: "Team Chat", description: "Real-time messaging, video calls, file sharing", action: () => setCurrentView('chat') },
+    { icon: BarChart3, title: "Analytics", description: "Performance tracking, revenue insights, reports", action: () => setCurrentView('analytics') },
+    { icon: FileText, title: "Documents", description: "Collaborative editing, version control, templates", action: () => setCurrentView('documents') },
+  ];
+
+  type Stat = { icon: LucideIcon; title: string; value: string; change: string };
+  const stats: Stat[] = [
+    { icon: FolderKanban, title: "Active Projects", value: "24", change: "+12%" },
+    { icon: Users, title: "Team Members", value: "156", change: "+8%" },
+    { icon: MessageCircle, title: "Messages Today", value: "1,247", change: "+23%" },
+    { icon: BarChart3, title: "Productivity", value: "94%", change: "+5%" },
+  ];
+
+  type QuickAction = { icon: LucideIcon; label: string; action: () => void };
+  const quickActions: QuickAction[] = [
+    { icon: FolderKanban, label: "New Project", action: () => setCurrentView('projects') },
+    { icon: MessageCircle, label: "Start Chat", action: () => setCurrentView('chat') },
+    { icon: FileText, label: "Create Doc", action: () => setCurrentView('documents') },
+    { icon: BarChart3, label: "View Analytics", action: () => setCurrentView('analytics') },
+  ];
 
   // Landing Page
   if (currentView === 'landing') {
@@ -42,32 +67,7 @@ const Index = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-              {[
-                { 
-                  icon: FolderKanban, 
-                  title: "Project Management", 
-                  description: "Kanban boards, Gantt charts, task automation",
-                  action: () => setCurrentView('projects')
-                },
-                { 
-                  icon: MessageCircle, 
-                  title: "Team Chat", 
-                  description: "Real-time messaging, video calls, file sharing",
-                  action: () => setCurrentView('chat')
-                },
-                { 
-                  icon: BarChart3, 
-                  title: "Analytics", 
-                  description: "Performance tracking, revenue insights, reports",
-                  action: () => setCurrentView('analytics')
-                },
-                { 
-                  icon: FileText, 
-                  title: "Documents", 
-                  description: "Collaborative editing, version control, templates",
-                  action: () => setCurrentView('documents')
-                }
-              ].map((feature, index) => (
+              {features.map((feature, index) => (
                 <div 
                   key={index} 
                   className="glass-card p-6 rounded-xl text-center hover:shadow-glow transition-all duration-300 cursor-pointer group"
@@ -211,12 +211,7 @@ const Index = () => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[
-                { icon: FolderKanban, title: "Active Projects", value: "24", change: "+12%" },
-                { icon: Users, title: "Team Members", value: "156", change: "+8%" },
-                { icon: MessageCircle, title: "Messages Today", value: "1,247", change: "+23%" },
-                { icon: BarChart3, title: "Productivity", value: "94%", change: "+5%" }
-              ].map((stat, index) => (
+              {stats.map((stat, index) => (
                 <div key={index} className="glass-card p-6 rounded-xl">
                   <div className="flex items-center justify-between mb-4">
                     <stat.icon className="w-8 h-8 text-primary" />
@@ -234,12 +229,7 @@ const Index = () => {
               <div className="glass-card p-6 rounded-xl">
                 <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
                 <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { icon: FolderKanban, label: "New Project", action: () => setCurrentView('projects') },
-                    { icon: MessageCircle, label: "Start Chat", action: () => setCurrentView('chat') },
-                    { icon: FileText, label: "Create Doc", action: () => setCurrentView('documents') },
-                    { icon: BarChart3, label: "View Analytics", action: () => setCurrentView('analytics') }
-                  ].map((action, index) => (
+                  {quickActions.map((action, index) => (
                     <Button 
                       key={index} 
                       variant="glass" 
