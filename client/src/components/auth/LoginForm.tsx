@@ -46,13 +46,22 @@ export function LoginForm({ onToggleMode }: LoginFormProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <div className="mb-4 p-3 bg-blue-500/20 border border-blue-400/30 rounded-lg text-sm">
+          <p className="font-medium text-blue-200 mb-2">Demo Accounts:</p>
+          <div className="text-blue-100 space-y-1">
+            <div>• <strong>admin@collabflow.com</strong> / admin123</div>
+            <div>• <strong>john@example.com</strong> / password123</div>
+            <div>• <strong>jane@example.com</strong> / password123</div>
+          </div>
+        </div>
+
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email" className="text-white">Email</Label>
             <Input
               id="email"
               type="email"
-              placeholder="admin@collabflow.com"
+              placeholder="Enter email address"
               className="bg-white/20 border-white/30 text-white placeholder:text-white/60"
               {...form.register('email')}
             />
@@ -67,7 +76,7 @@ export function LoginForm({ onToggleMode }: LoginFormProps) {
               <Input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="admin123"
+                placeholder="Enter password"
                 className="bg-white/20 border-white/30 text-white placeholder:text-white/60 pr-10"
                 {...form.register('password')}
               />
