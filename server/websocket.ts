@@ -22,7 +22,7 @@ interface BroadcastMessage {
   data: any;
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
 
 export class WebSocketManager {
   private wss: WebSocketServer;
@@ -33,7 +33,10 @@ export class WebSocketManager {
     this.wss = new WebSocketServer({ 
       server, 
       path: '/ws',
-      verifyClient: this.verifyClient.bind(this)
+      verifyClient: (info) => {
+        console.log('verifyClient called for:', info.req.url);
+        return this.verifyClient(info);
+      }
     });
 
     this.wss.on('connection', this.handleConnection.bind(this));
@@ -50,8 +53,12 @@ export class WebSocketManager {
         return false;
       }
 
+      console.log('Verifying WebSocket token:', token.substring(0, 20) + '...');
       const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+      console.log('Decoded token userId:', decoded.userId);
+      
       const user = await storage.getUserById(decoded.userId);
+      console.log('Found user:', user ? user.email : 'null');
       
       if (!user) {
         console.log('WebSocket connection rejected: Invalid user');
@@ -60,6 +67,7 @@ export class WebSocketManager {
 
       // Store user info in the request for later use
       info.req.user = user;
+      console.log('WebSocket client verified successfully for user:', user.email);
       return true;
     } catch (error) {
       console.log('WebSocket connection rejected:', error);
@@ -69,6 +77,11 @@ export class WebSocketManager {
 
   private handleConnection(ws: AuthenticatedWebSocket, req: any) {
     const user = req.user as User;
+    if (!user) {
+      console.error('No user found in WebSocket connection request');
+      ws.close();
+      return;
+    }
     ws.user = user;
     ws.userId = user.id;
     ws.channels = new Set();
@@ -218,7 +231,7 @@ export class WebSocketManager {
       });
 
       // Verify user has access to the channel
-      const channelId = validatedData.channelId;
+      const channelId = String(validatedData.channelId);
       if (!channelId) {
         this.sendToClient(ws, {
           type: 'error',
@@ -237,7 +250,7 @@ export class WebSocketManager {
       }
 
       // Check if user is in the channel
-      if (!ws.channels?.has(channelId)) {
+      if (!ws.channels?.has(channelId as string)) {
         this.sendToClient(ws, {
           type: 'error',
           data: { message: 'You must join the channel first' }
@@ -252,7 +265,7 @@ export class WebSocketManager {
       const fullMessage = await storage.getMessageById(message.id) || message;
 
       // Broadcast to all users in the channel
-      this.broadcastToChannel(channelId, {
+      this.broadcastToChannel(channelId as string, {
         type: 'new_message',
         data: { message: fullMessage }
       });

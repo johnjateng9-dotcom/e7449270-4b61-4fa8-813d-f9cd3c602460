@@ -164,12 +164,12 @@ export class DatabaseStorage implements IStorage {
     const result = await db.select().from(tasks)
       .where(eq(tasks.projectId, projectId))
       .orderBy(asc(tasks.position), desc(tasks.createdAt));
-    return Array.isArray(result) ? result : [];
+    return result as Task[];
   }
 
   async createTask(insertTask: InsertTask): Promise<Task> {
-    const result = await db.insert(tasks).values(insertTask).returning();
-    return result[0] as Task;
+    const [task] = await db.insert(tasks).values(insertTask).returning();
+    return task;
   }
 
   async updateTask(id: string, updates: Partial<Task>): Promise<Task | undefined> {
@@ -220,12 +220,12 @@ export class DatabaseStorage implements IStorage {
       .where(eq(messages.channelId, channelId))
       .orderBy(desc(messages.createdAt))
       .limit(limit);
-    return Array.isArray(result) ? result : [];
+    return result as Message[];
   }
 
   async createMessage(insertMessage: InsertMessage): Promise<Message> {
-    const result = await db.insert(messages).values(insertMessage).returning();
-    return result[0] as Message;
+    const [message] = await db.insert(messages).values(insertMessage).returning();
+    return message;
   }
 
   async updateMessage(id: string, updates: Partial<Message>): Promise<Message | undefined> {
