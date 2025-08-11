@@ -7,6 +7,7 @@ import {
   insertTaskSchema, insertChannelSchema, insertMessageSchema, insertDocumentSchema 
 } from "@shared/schema";
 import { z } from "zod";
+import { initializeWebSocket } from "./websocket";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
@@ -347,6 +348,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  
+  // Initialize WebSocket server
+  initializeWebSocket(httpServer);
 
   return httpServer;
 }

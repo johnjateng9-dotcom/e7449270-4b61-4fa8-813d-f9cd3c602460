@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { 
   Send, 
@@ -12,94 +12,86 @@ import {
   Lock,
   Users
 } from "lucide-react";
-
-interface Message {
-  id: string;
-  user: string;
-  avatar: string;
-  content: string;
-  timestamp: string;
-  type: 'text' | 'file' | 'system';
-  reactions?: string[];
-}
+import { ChatInterface as LiveChatInterface } from "@/components/chat/ChatInterface";
+import { apiClient } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 interface Channel {
   id: string;
   name: string;
-  type: 'public' | 'private' | 'dm';
+  type: 'public' | 'private' | 'direct';
   unread: number;
   isActive: boolean;
+  teamId?: string;
+  projectId?: string;
 }
 
 const ChatInterface = () => {
-  const [message, setMessage] = useState("");
-  const [activeChannel, setActiveChannel] = useState("general");
+  const [activeChannel, setActiveChannel] = useState<Channel | null>(null);
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [isLoadingChannels, setIsLoadingChannels] = useState(true);
+  const { user } = useAuth();
+  const { toast } = useToast();
 
-  const channels: Channel[] = [
-    { id: "general", name: "general", type: "public", unread: 0, isActive: true },
-    { id: "development", name: "development", type: "public", unread: 3, isActive: false },
-    { id: "design", name: "design", type: "public", unread: 1, isActive: false },
-    { id: "random", name: "random", type: "public", unread: 0, isActive: false },
-    { id: "private-team", name: "leadership-team", type: "private", unread: 2, isActive: false },
-  ];
+  // Load user's teams and channels
+  useEffect(() => {
+    const loadChannels = async () => {
+      try {
+        setIsLoadingChannels(true);
+        
+        // First get user's teams
+        const teams = await apiClient.get('/api/teams');
+        const channelsList: Channel[] = [];
 
-  const messages: Message[] = [
-    {
-      id: "1",
-      user: "Sarah Chen",
-      avatar: "SC",
-      content: "Hey team! Just pushed the latest design updates to the repository. Can everyone please review?",
-      timestamp: "10:30 AM",
-      type: "text",
-      reactions: ["👍", "🎉"]
-    },
-    {
-      id: "2",
-      user: "Mike Johnson",
-      avatar: "MJ",
-      content: "Looks great! The new color scheme really improves readability.",
-      timestamp: "10:32 AM",
-      type: "text"
-    },
-    {
-      id: "3",
-      user: "Alex Kim",
-      avatar: "AK",
-      content: "I've tested the payment integration and it's working perfectly. Ready for deployment! 🚀",
-      timestamp: "10:35 AM",
-      type: "text",
-      reactions: ["🚀", "✅"]
-    },
-    {
-      id: "4",
-      user: "System",
-      avatar: "SYS",
-      content: "Emma Wilson uploaded mobile-app-screenshots.zip",
-      timestamp: "10:40 AM",
-      type: "file"
-    },
-    {
-      id: "5",
-      user: "Emma Wilson",
-      avatar: "EW",
-      content: "Here are the latest screenshots from our mobile testing. Everything looks good on both iOS and Android!",
-      timestamp: "10:41 AM",
-      type: "text"
+        // Get channels for each team
+        for (const team of teams) {
+          try {
+            const teamChannels = await apiClient.get(`/api/teams/${team.id}/channels`);
+            const mappedChannels = teamChannels.map((channel: any) => ({
+              id: channel.id,
+              name: channel.name,
+              type: channel.type,
+              unread: 0, // Would come from WebSocket or separate API
+              isActive: false,
+              teamId: team.id,
+              projectId: channel.projectId
+            }));
+            channelsList.push(...mappedChannels);
+          } catch (error) {
+            console.error(`Failed to load channels for team ${team.id}:`, error);
+          }
+        }
+
+        setChannels(channelsList);
+        
+        // Set first channel as active if available
+        if (channelsList.length > 0 && !activeChannel) {
+          setActiveChannel(channelsList[0]);
+        }
+      } catch (error) {
+        console.error('Failed to load channels:', error);
+        toast({
+          title: "Failed to load channels",
+          description: "Unable to connect to chat service",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingChannels(false);
+      }
+    };
+
+    if (user) {
+      loadChannels();
     }
-  ];
+  }, [user, toast, activeChannel]);
 
-  const handleSendMessage = () => {
-    if (message.trim()) {
-      console.log("Sending message:", message);
-      setMessage("");
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
+  const handleChannelSelect = (channel: Channel) => {
+    setActiveChannel(channel);
+    setChannels(prev => prev.map(c => ({
+      ...c,
+      isActive: c.id === channel.id
+    })));
   };
 
   return (
@@ -134,31 +126,42 @@ const ChatInterface = () => {
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-2 mb-2">
               Channels
             </p>
-            {channels.map((channel) => (
-              <button
-                key={channel.id}
-                onClick={() => setActiveChannel(channel.id)}
-                className={`w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-sm transition-all ${
-                  channel.id === activeChannel 
-                    ? 'bg-primary/10 text-primary' 
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                }`}
-              >
-                <div className="flex items-center space-x-2">
-                  {channel.type === 'private' ? (
-                    <Lock className="w-3 h-3" />
-                  ) : (
-                    <Hash className="w-3 h-3" />
+            {isLoadingChannels ? (
+              <div className="flex items-center justify-center py-4">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              </div>
+            ) : channels.length === 0 ? (
+              <div className="text-center py-4 text-sm text-muted-foreground">
+                No channels available
+              </div>
+            ) : (
+              channels.map((channel) => (
+                <button
+                  key={channel.id}
+                  onClick={() => handleChannelSelect(channel)}
+                  className={`w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-sm transition-all ${
+                    channel.id === activeChannel?.id 
+                      ? 'bg-primary/10 text-primary' 
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                  }`}
+                  data-testid={`button-channel-${channel.name}`}
+                >
+                  <div className="flex items-center space-x-2">
+                    {channel.type === 'private' ? (
+                      <Lock className="w-3 h-3" />
+                    ) : (
+                      <Hash className="w-3 h-3" />
+                    )}
+                    <span>{channel.name}</span>
+                  </div>
+                  {channel.unread > 0 && (
+                    <span className="bg-destructive text-destructive-foreground text-xs rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
+                      {channel.unread}
+                    </span>
                   )}
-                  <span>{channel.name}</span>
-                </div>
-                {channel.unread > 0 && (
-                  <span className="bg-destructive text-destructive-foreground text-xs rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
-                    {channel.unread}
-                  </span>
-                )}
-              </button>
-            ))}
+                </button>
+              ))
+            )}
           </div>
 
           <div className="mb-4">
@@ -184,96 +187,23 @@ const ChatInterface = () => {
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
-        {/* Chat Header */}
-        <div className="p-4 border-b border-border/50 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <Hash className="w-5 h-5 text-muted-foreground" />
-            <div>
-              <h3 className="font-semibold">general</h3>
-              <p className="text-xs text-muted-foreground">12 members</p>
+        {activeChannel ? (
+          <LiveChatInterface
+            channelId={activeChannel.id}
+            channelName={activeChannel.name}
+            channelType={activeChannel.type}
+          />
+        ) : (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <Hash className="h-12 w-12 mx-auto mb-4 opacity-50 text-muted-foreground" />
+              <h3 className="text-lg font-medium mb-2">No channel selected</h3>
+              <p className="text-muted-foreground">
+                Select a channel from the sidebar to start chatting
+              </p>
             </div>
           </div>
-          
-          <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="icon" className="w-8 h-8">
-              <Phone className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="w-8 h-8">
-              <Video className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="w-8 h-8">
-              <Users className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.map((msg) => (
-            <div key={msg.id} className="flex space-x-3 group">
-              <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-xs text-primary-foreground font-medium">{msg.avatar}</span>
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <div className="flex items-baseline space-x-2 mb-1">
-                  <span className="font-medium text-sm">{msg.user}</span>
-                  <span className="text-xs text-muted-foreground">{msg.timestamp}</span>
-                </div>
-                
-                <div className={`${msg.type === 'file' ? 'bg-muted/30 p-3 rounded-lg border border-border/50' : ''}`}>
-                  <p className="text-sm leading-relaxed">{msg.content}</p>
-                  
-                  {msg.reactions && msg.reactions.length > 0 && (
-                    <div className="flex space-x-1 mt-2">
-                      {msg.reactions.map((reaction, index) => (
-                        <button
-                          key={index}
-                          className="bg-muted/50 hover:bg-muted px-2 py-1 rounded-md text-xs transition-colors"
-                        >
-                          {reaction}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Message Input */}
-        <div className="p-4 border-t border-border/50">
-          <div className="flex items-center space-x-3">
-            <div className="flex-1 relative">
-              <textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Type a message..."
-                className="w-full px-4 py-3 pr-12 bg-muted/50 border border-border/50 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
-                rows={1}
-              />
-              <div className="absolute right-3 top-3 flex items-center space-x-1">
-                <Button variant="ghost" size="icon" className="w-6 h-6">
-                  <Paperclip className="w-4 h-4" />
-                </Button>
-                <Button variant="ghost" size="icon" className="w-6 h-6">
-                  <Smile className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-            
-            <Button 
-              variant="gradient" 
-              size="icon"
-              onClick={handleSendMessage}
-              disabled={!message.trim()}
-            >
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

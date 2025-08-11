@@ -9,6 +9,7 @@ import { eq, and, desc, asc } from "drizzle-orm";
 export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
+  getUserById(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
@@ -34,11 +35,13 @@ export interface IStorage {
 
   // Channel operations
   getChannel(id: string): Promise<Channel | undefined>;
+  getChannelById(id: string): Promise<Channel | undefined>;
   getTeamChannels(teamId: string): Promise<Channel[]>;
   createChannel(channel: InsertChannel): Promise<Channel>;
 
   // Message operations
   getMessage(id: string): Promise<Message | undefined>;
+  getMessageById(id: string): Promise<Message | undefined>;
   getChannelMessages(channelId: string, limit?: number): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
   updateMessage(id: string, updates: Partial<Message>): Promise<Message | undefined>;
@@ -62,6 +65,10 @@ export class DatabaseStorage implements IStorage {
     if (!user) return undefined;
     const { password: _, ...userWithoutPassword } = user;
     return userWithoutPassword as User;
+  }
+
+  async getUserById(id: string): Promise<User | undefined> {
+    return this.getUser(id);
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
@@ -154,14 +161,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProjectTasks(projectId: string): Promise<Task[]> {
-    return await db.select().from(tasks)
+    const result = await db.select().from(tasks)
       .where(eq(tasks.projectId, projectId))
       .orderBy(asc(tasks.position), desc(tasks.createdAt));
+    return Array.isArray(result) ? result : [];
   }
 
   async createTask(insertTask: InsertTask): Promise<Task> {
-    const [task] = await db.insert(tasks).values(insertTask).returning();
-    return task;
+    const result = await db.insert(tasks).values(insertTask).returning();
+    return result[0] as Task;
   }
 
   async updateTask(id: string, updates: Partial<Task>): Promise<Task | undefined> {
@@ -182,6 +190,10 @@ export class DatabaseStorage implements IStorage {
     return channel || undefined;
   }
 
+  async getChannelById(id: string): Promise<Channel | undefined> {
+    return this.getChannel(id);
+  }
+
   async getTeamChannels(teamId: string): Promise<Channel[]> {
     return await db.select().from(channels)
       .where(eq(channels.teamId, teamId))
@@ -199,16 +211,21 @@ export class DatabaseStorage implements IStorage {
     return message || undefined;
   }
 
+  async getMessageById(id: string): Promise<Message | undefined> {
+    return this.getMessage(id);
+  }
+
   async getChannelMessages(channelId: string, limit: number = 50): Promise<Message[]> {
-    return await db.select().from(messages)
+    const result = await db.select().from(messages)
       .where(eq(messages.channelId, channelId))
       .orderBy(desc(messages.createdAt))
       .limit(limit);
+    return Array.isArray(result) ? result : [];
   }
 
   async createMessage(insertMessage: InsertMessage): Promise<Message> {
-    const [message] = await db.insert(messages).values(insertMessage).returning();
-    return message;
+    const result = await db.insert(messages).values(insertMessage).returning();
+    return result[0] as Message;
   }
 
   async updateMessage(id: string, updates: Partial<Message>): Promise<Message | undefined> {
